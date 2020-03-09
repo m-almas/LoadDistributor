@@ -20,7 +20,7 @@ struct Frames
     int frameId;
     int frameData[10]; // in the end it should be 1200*800 one dimensional array
     //also need checksum
-    //isFinished?
+    //isFinished? Do we need such variable??
 };
 
 struct CamData
@@ -36,11 +36,11 @@ struct SharedInts
     sem_t produced; // 0-10
     sem_t consumed; // 0-10
 
-    sem_t cIndexLock; // 0-1
-    int consumedUpTo; // index of consumed up to (cumulative)
-    sem_t pIndexLock; // 0-1 to access producedUpTo
-    int producedUpTo; // index of produced up to (cumulative)
-    int data[10];     //the actual data
+    sem_t cIndexLock;           // 0-1
+    int consumedUpTo;           // index of consumed up to (cumulative)
+    sem_t pIndexLock;           // 0-1 to access producedUpTo
+    int producedUpTo;           // index of produced up to (cumulative)
+    struct CamData camdata[10]; //should be 60 frames of particular camera
 };
 
 int getEmptyIndex(int *index, int length)
@@ -55,6 +55,17 @@ int getEmptyIndex(int *index, int length)
     return -1;
 }
 
+void produceCamData(struct CamData *camdata)
+{
+    for (size_t i = 0; i < 10; i++)
+    {
+        for (size_t j = 0; j < 10; j++)
+        {
+            camdata->frames[i].frameData[j] = rand(); //here we should read from random
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     key_t ShmKEY;
@@ -62,7 +73,7 @@ int main(int argc, char *argv[])
     struct SharedInts *ShmPTR;
     pid_t pid;
     /*to get unigue identifier*/
-    ShmKEY = ftok(".", 'x');
+    ShmKEY = ftok("..", 'x');
     //allocating shared block
     ShmID = shmget(ShmKEY, sizeof(struct SharedInts), IPC_CREAT | 0666);
     if (ShmID < 0)
@@ -98,7 +109,7 @@ int main(int argc, char *argv[])
 
     if (pid == 0)
     {
-        int data = 63;
+        int dataIndex = 0;
         int producedIndex = 0;
         for (;;)
         {
@@ -108,14 +119,13 @@ int main(int argc, char *argv[])
             producedIndex = ShmPTR->producedUpTo;
             ShmPTR->producedUpTo = (producedIndex + 1) % 10;
             sem_post(&ShmPTR->pIndexLock);
-
-            ShmPTR->data[producedIndex] = data; //suppose that here we generate frames
+            produceCamData(&(ShmPTR->camdata[producedIndex]));
             sleep(5);
-            printf("produced %i\n", data);
+            printf("produced data with index %i\n", dataIndex);
             fflush(stdout);
 
             sem_post(&ShmPTR->produced);
-            data++;
+            dataIndex++;
         }
     }
     else
