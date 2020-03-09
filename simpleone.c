@@ -15,6 +15,20 @@
 #define EMPTY 5
 #define FILLED 3
 
+struct Frames
+{
+    int frameId;
+    int frameData[10]; // in the end it should be 1200*800 one dimensional array
+    //also need checksum
+    //isFinished?
+};
+
+struct CamData
+{
+    int camID;
+    struct Frames frames[10];
+};
+
 //think about round robin when it comes into data
 struct SharedInts
 {
