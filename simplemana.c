@@ -15,15 +15,14 @@
 struct SharedInts
 {
     //two semaphores we need
-    sem_t produced; // 0-2
-    sem_t consumed; // 0-2
-    //to track which one produced
-    int index[2];
-    int length;
-    //to secure the access of the above array
-    sem_t lock; // 0 1
+    sem_t produced; // 0-10
+    sem_t consumed; // 0-10
 
-    int data[2]; //the actual data
+    sem_t cIndexLock; // 0-1
+    int consumedUpTo; // index of consumed up to (cumulative)
+    sem_t pIndexLock; // 0-1 to access producedUpTo
+    int producedUpTo; // index of produced up to (cumulative)
+    int data[10];     //the actual data
 };
 
 int getFilledIndex(int *index, int length)
@@ -62,30 +61,22 @@ int main(int argc, char *argv[])
     for (;;)
     {
         //something produced
-        sem_wait(&ShmPTR->produced);
         int i;
         int data;
-        int t;
-        sem_wait(&ShmPTR->lock);
-        i = getFilledIndex(ShmPTR->index, ShmPTR->length);
-        if (i < 0)
-        {
-            printf("Error detected \n");
-            fflush(stdout);
-            exit(1);
-        }
+        int consumedIndex;
 
-        ShmPTR->index[i] = BUSY;
-        sem_post(&ShmPTR->lock);
+        sem_wait(&ShmPTR->produced);
+        sem_wait(&ShmPTR->cIndexLock);
+        //get consumed index and mode it with 10
+        consumedIndex = ShmPTR->consumedUpTo;
+        ShmPTR->consumedUpTo = (consumedIndex + 1) % 10;
+        sem_post(&ShmPTR->cIndexLock);
 
-        data = ShmPTR->data[i];
+        //here we get the data and do our stuff
+        sleep(1);
+        data = ShmPTR->data[consumedIndex];
         printf("got the %i \n", data);
         fflush(stdout);
-        sleep(1);
-
-        sem_wait(&ShmPTR->lock);
-        ShmPTR->index[i] = EMPTY;
-        sem_post(&ShmPTR->lock);
 
         sem_post(&ShmPTR->consumed);
     }

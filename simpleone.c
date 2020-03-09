@@ -84,36 +84,22 @@ int main(int argc, char *argv[])
 
     if (pid == 0)
     {
-        int data = 50;
-        int i = 0;
+        int data = 63;
+        int producedIndex = 0;
         for (;;)
         {
             sem_wait(&ShmPTR->consumed);
-            sem_wait(&ShmPTR->lock);
+            sem_wait(&ShmPTR->pIndexLock);
+            //get produced index and mode it with 10
+            producedIndex = ShmPTR->producedUpTo;
+            ShmPTR->producedUpTo = (producedIndex + 1) % 10;
+            sem_post(&ShmPTR->pIndexLock);
 
-            i = getEmptyIndex(ShmPTR->index, ShmPTR->length);
-            if (i < 0)
-            {
-                printf("Error detected \n");
-                fflush(stdout);
-                exit(1);
-            }
-
-            ShmPTR->index[i] = BUSY;
-
-            sem_post(&ShmPTR->lock);
-
-            ShmPTR->index[i] = 150;
-            ShmPTR->data[i] = data;
+            ShmPTR->data[producedIndex] = data; //suppose that here we generate frames
+            sleep(5);
             printf("produced %i\n", data);
             fflush(stdout);
-            sleep(2);
 
-            sem_wait(&ShmPTR->lock);
-
-            ShmPTR->index[i] = FILLED;
-
-            sem_post(&ShmPTR->lock);
             sem_post(&ShmPTR->produced);
             data++;
         }
