@@ -16,15 +16,14 @@
 struct SharedInts
 {
     //two semaphores we need
-    sem_t produced; // 0-2
-    sem_t consumed; // 0-2
-    //to track which one produced
-    int index[2];
-    int length;
-    //to secure the access of the above array
-    sem_t lock; // 0 1
+    sem_t produced; // 0-10
+    sem_t consumed; // 0-10
 
-    int data[2]; //the actual data
+    sem_t cIndexLock; // 0-1
+    int consumedUpTo; // index of consumed up to (cumulative)
+    sem_t pIndexLock; // 0-1 to access producedUpTo
+    int producedUpTo; // index of produced up to (cumulative)
+    int data[10];     //the actual data
 };
 
 int getEmptyIndex(int *index, int length)
@@ -62,13 +61,13 @@ int main(int argc, char *argv[])
     }
 
     //**initialization of semaphores
-    sem_init(&(ShmPTR->consumed), 2, 2);
+    sem_init(&(ShmPTR->consumed), 2, 10);
     sem_init(&(ShmPTR->produced), 2, 0);
-    sem_init(&(ShmPTR->lock), 2, 1);
+    sem_init(&(ShmPTR->pIndexLock), 2, 1);
+    sem_init(&(ShmPTR->cIndexLock), 2, 1);
     //** dealing with indexes
-    ShmPTR->index[0] = EMPTY;
-    ShmPTR->index[1] = EMPTY;
-    ShmPTR->length = 2;
+    ShmPTR->producedUpTo = 0;
+    ShmPTR->consumedUpTo = 0;
     /*******/
     pid_t pid = fork();
     if (pid == 0)
