@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     key_t ShmKEY;
     int ShmID;
     struct SharedInts *ShmPTR;
+    pid_t pid;
     /*to get unigue identifier*/
     ShmKEY = ftok(".", 'x');
     //allocating shared block
@@ -72,12 +73,19 @@ int main(int argc, char *argv[])
     ShmPTR->producedUpTo = 0;
     ShmPTR->consumedUpTo = 0;
     /*******/
-    pid_t pid = fork();
+    for (size_t j = 0; j < 5; j++)
+    {
+        pid = fork();
+        if (pid == 0)
+        {
+            break;
+        }
+    }
+
     if (pid == 0)
     {
         int data = 50;
         int i = 0;
-        char buf[4096];
         for (;;)
         {
             sem_wait(&ShmPTR->consumed);
