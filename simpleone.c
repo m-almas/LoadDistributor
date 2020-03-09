@@ -112,8 +112,12 @@ int main(int argc, char *argv[])
     }
     else
     {
-        waitpid(pid, NULL, 0);
-        printf("%i \n", ShmPTR->data[0]);
-        printf("%i \n", ShmPTR->data[1]);
+        while (pid = waitpid(-1, NULL, 0))
+        {
+            if (errno == ECHILD)
+            {
+                break;
+            }
+        }
     }
 }
