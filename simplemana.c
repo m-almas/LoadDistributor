@@ -7,6 +7,9 @@
 #include <semaphore.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 
 #define BUSY 7
 #define EMPTY 5
@@ -41,6 +44,7 @@ int main(int argc, char *argv[])
 {
     key_t ShmKEY;
     int ShmID;
+    pid_t pid;
     struct SharedInts *ShmPTR;
     /*to get unigue identifier*/
     ShmKEY = ftok(".", 'x');
@@ -58,26 +62,49 @@ int main(int argc, char *argv[])
         printf("*** shmat error ***\n");
         exit(1);
     }
-    for (;;)
+
+    for (size_t j = 0; j < 2; j++)
     {
-        //something produced
+        pid = fork();
+        if (pid == 0)
+        {
+            break;
+        }
+    }
+    if (pid == 0)
+    {
         int i;
         int data;
         int consumedIndex;
 
-        sem_wait(&ShmPTR->produced);
-        sem_wait(&ShmPTR->cIndexLock);
-        //get consumed index and mode it with 10
-        consumedIndex = ShmPTR->consumedUpTo;
-        ShmPTR->consumedUpTo = (consumedIndex + 1) % 10;
-        sem_post(&ShmPTR->cIndexLock);
+        for (;;)
+        {
+            //something produced
 
-        //here we get the data and do our stuff
-        sleep(1);
-        data = ShmPTR->data[consumedIndex];
-        printf("got the %i \n", data);
-        fflush(stdout);
+            sem_wait(&ShmPTR->produced);
+            sem_wait(&ShmPTR->cIndexLock);
+            //get consumed index and mode it with 10
+            consumedIndex = ShmPTR->consumedUpTo;
+            ShmPTR->consumedUpTo = (consumedIndex + 1) % 10;
+            sem_post(&ShmPTR->cIndexLock);
 
-        sem_post(&ShmPTR->consumed);
+            //here we get the data and do our stuff
+            sleep(2);
+            data = ShmPTR->data[consumedIndex];
+            printf("got the %i \n", data);
+            fflush(stdout);
+
+            sem_post(&ShmPTR->consumed);
+        }
+    }
+    else
+    {
+        while (pid = waitpid(-1, NULL, 0))
+        {
+            if (errno == ECHILD)
+            {
+                break;
+            }
+        }
     }
 }
