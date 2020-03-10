@@ -11,37 +11,11 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+#include "dataBlock.h"
+
 #define BUSY 7
 #define EMPTY 5
 #define FILLED 3
-
-struct Frames
-{
-    int frameId;
-    int frameData[10]; // in the end it should be 1200*800 one dimensional array
-    //also need checksum
-    //isFinished? Do we need such variable??
-};
-
-struct CamData
-{
-    int camID;
-    struct Frames frames[10];
-};
-
-//think about round robin when it comes into data
-struct SharedInts
-{
-    //two semaphores we need
-    sem_t produced; // 0-10
-    sem_t consumed; // 0-10
-
-    sem_t cIndexLock;           // 0-1
-    int consumedUpTo;           // index of consumed up to (cumulative)
-    sem_t pIndexLock;           // 0-1 to access producedUpTo
-    int producedUpTo;           // index of produced up to (cumulative)
-    struct CamData camdata[10]; //should be 60 frames of particular camera
-};
 
 int getFilledIndex(int *index, int length)
 {
@@ -75,18 +49,18 @@ int main(int argc, char *argv[])
     key_t ShmKEY;
     int ShmID;
     pid_t pid;
-    struct SharedInts *ShmPTR;
+    struct DataBlock *ShmPTR;
     /*to get unigue identifier*/
     ShmKEY = ftok("..", 'x');
     //allocating shared block
-    ShmID = shmget(ShmKEY, sizeof(struct SharedInts), 0666);
+    ShmID = shmget(ShmKEY, sizeof(struct DataBlock), 0666);
     if (ShmID < 0)
     {
         printf("*** shmget error ***\n");
         exit(1);
     }
 
-    ShmPTR = (struct SharedInts *)shmat(ShmID, NULL, 0);
+    ShmPTR = (struct DataBlock *)shmat(ShmID, NULL, 0);
     if ((int)ShmPTR == -1)
     {
         printf("*** shmat error ***\n");
