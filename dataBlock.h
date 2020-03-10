@@ -35,7 +35,8 @@ struct DataBlock
     struct Camera cameras[10]; //the idea is that every process will iterate through this
     //array and look for on camera
     int numberOfActiveCameras; //should resemble number active processes // guess this also should have lock
-
+    sem_t commandStatus;       //initial is 0 post is done on manager process.
+    int commandType;
     //The camData part
     sem_t produced; // 0-10
     sem_t consumed; // 0-10
