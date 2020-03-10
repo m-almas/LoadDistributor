@@ -3,7 +3,7 @@
 
 #include <semaphore.h>
 
-struct Camera
+struct CameraSocket
 {
     int cameraId;
     int serviced;              // to indicate that camera is taken by some process and already serviced
@@ -13,7 +13,7 @@ struct Camera
     sem_t servicedLock;        //
 };
 
-struct Frames
+struct Frame
 {
     int frameId;
     int frameData[10]; // in the end it should be 1200*800 one dimensional array
@@ -24,7 +24,7 @@ struct Frames
 struct CamData
 {
     int camID;
-    struct Frames frames[10];
+    struct Frame frames[10];
 };
 
 struct DataBlock
@@ -32,7 +32,7 @@ struct DataBlock
     //create so that if process is created then there exists camera with on state and not serviced.
     //by other processes
     //The cameras itself
-    struct Camera cameras[10]; //the idea is that every process will iterate through this
+    struct CameraSocket cameras[10]; //the idea is that every process will iterate through this
     //array and look for on camera
     int numberOfActiveCameras; //should resemble number active processes // guess this also should have lock
     sem_t commandStatus;       //initial is 0 post is done on manager process.
