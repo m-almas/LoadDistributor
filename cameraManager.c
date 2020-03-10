@@ -16,9 +16,13 @@
 #include "dataBlock.h"
 
 #define BUFSIZE 4096
+//comandStatus
 #define ADD 2
 #define REMOVE 3
 #define STOP 5
+//***
+
+#define SOCKET_NUMBER 10
 
 //helper functions
 int getCommandType(char *buf);
@@ -26,7 +30,7 @@ void *initSharedMemory(key_t ShmKEY);
 void initCamData(struct DataBlock *ShmDataBlock);
 void activateCameras(struct DataBlock *dataBlock, int numberOfCameras);
 void initSeparateCameraSocket(struct CameraSocket *camera);
-void initCameraSockets(struct DataBlock *ShmDataBlock, int numberOfCameras);
+void initCameraSockets(struct DataBlock *ShmDataBlock);
 
 int main(int argc, char *argv[])
 {
@@ -53,13 +57,13 @@ int main(int argc, char *argv[])
     //****
 
     initCamData(ShmDataBlock);
-    initCameraSockets(ShmDataBlock, 10);
+    initCameraSockets(ShmDataBlock);
     activateCameras(ShmDataBlock, numberOfCameras);
 
     //for checking purposes
     for (size_t i = 0; i < 10; i++)
     {
-        int camID = ShmDataBlock->cameras[i].cameraId;
+        int camID = ShmDataBlock->cameraSockets[i].cameraId;
         printf("The cameraIDs: %i\n", camID);
         fflush(stdout);
     }
@@ -84,19 +88,18 @@ int main(int argc, char *argv[])
                 // after that you should post commandStatus and set the command into ADD
                 for (size_t i = 0; i < 10; i++)
                 {
-                    camera = &ShmDataBlock->cameras[i];
+                    camera = &ShmDataBlock->cameraSockets[i];
 
-                    sem_wait(&camera->onOffLock);
-                    if (!(camera->on))
+                    sem_wait(&camera->cStatusLock);
+                    if (camera->cameraStatus == OFF)
                     {
-                        camera->on = 1;
-                        camera->serviced = 0;
+                        camera->cameraStatus = BUSY;
                         ShmDataBlock->commandType = ADD;
-                        sem_post(&ShmDataBlock->commandStatus); //this status should not be 2
-                        sem_post(&camera->onOffLock);
+                        sem_post(&ShmDataBlock->commandIndicator); //this indicator should not be 2
+                        sem_post(&camera->cStatusLock);
                         break;
                     }
-                    sem_post(&camera->onOffLock);
+                    sem_post(&camera->cStatusLock);
                 }
 
                 printf("You've entered add\n");
@@ -106,18 +109,18 @@ int main(int argc, char *argv[])
                 struct CameraSocket *camera;
                 for (size_t i = 0; i < 10; i++)
                 {
-                    camera = &ShmDataBlock->cameras[i];
-                    sem_wait(&camera->onOffLock);
-                    if (camera->on)
+                    camera = &ShmDataBlock->cameraSockets[i];
+                    sem_wait(&camera->cStatusLock);
+                    if (camera->cameraStatus == BUSY)
                     {
-                        camera->on = 0;
+                        camera->cameraStatus == OFF;
 
                         ShmDataBlock->commandType = REMOVE;
-                        sem_post(&ShmDataBlock->commandStatus);
-                        sem_post(&camera->onOffLock);
+                        sem_post(&ShmDataBlock->commandIndicator);
+                        sem_post(&camera->cStatusLock);
                         break;
                     }
-                    sem_post(&camera->onOffLock);
+                    sem_post(&camera->cStatusLock);
                 }
 
                 sem_wait(&camera->gracefullFinishLock);
@@ -173,7 +176,7 @@ int main(int argc, char *argv[])
         {
             for (;;)
             {
-                sem_wait(&ShmDataBlock->commandStatus);
+                sem_wait(&ShmDataBlock->commandIndicator);
                 if (ShmDataBlock->commandType == REMOVE)
                 {
                     wait(&status);
@@ -202,26 +205,26 @@ int main(int argc, char *argv[])
             struct CameraSocket *chosenCamera;
             for (size_t i = 0; i < 10; i++)
             {
-                chosenCamera = &ShmDataBlock->cameras[i];
-                sem_wait(&chosenCamera->onOffLock);
-                if (chosenCamera->on && !(chosenCamera->serviced)) //problem is here
+                chosenCamera = &ShmDataBlock->cameraSockets[i];
+                sem_wait(&chosenCamera->cStatusLock);
+                if (chosenCamera->cameraStatus == ON) //problem is here??
                 {
                     break;
                 }
-                sem_post(&chosenCamera->onOffLock);
+                sem_post(&chosenCamera->cStatusLock);
             }
-            chosenCamera->serviced = 1;
-            sem_post(&chosenCamera->onOffLock);
+            chosenCamera->cameraStatus = BUSY;
+            sem_post(&chosenCamera->cStatusLock);
             //camera is chosen for service
             for (;;)
             {
-                sem_wait(&chosenCamera->onOffLock);
-                if (!(chosenCamera->on))
+                sem_wait(&chosenCamera->cStatusLock);
+                if (chosenCamera->cameraStatus == OFF)
                 {
-                    sem_post(&chosenCamera->onOffLock);
+                    sem_post(&chosenCamera->cStatusLock);
                     break;
                 }
-                sem_post(&chosenCamera->onOffLock);
+                sem_post(&chosenCamera->cStatusLock);
                 dprintf(fd, "service is on for %i\n", chosenCamera->cameraId);
                 fflush(stdout);
                 sleep(2);
@@ -289,10 +292,8 @@ void initSeparateCameraSocket(struct CameraSocket *camera)
 {
     camera->cameraId = rand();
     sem_init(&camera->gracefullFinishLock, 2, 0);
-    sem_init(&camera->servicedLock, 2, 1);
-    camera->serviced = 0;
-    sem_init(&camera->onOffLock, 2, 1);
-    camera->on = 0;
+    sem_init(&camera->cStatusLock, 2, 1);
+    camera->cameraStatus = OFF;
 }
 
 void activateCameras(struct DataBlock *dataBlock, int numberOfCameras)
@@ -300,16 +301,16 @@ void activateCameras(struct DataBlock *dataBlock, int numberOfCameras)
     dataBlock->numberOfActiveCameras = numberOfCameras;
     for (size_t i = 0; i < numberOfCameras; i++)
     {
-        dataBlock->cameras[i].on = 1;
+        dataBlock->cameraSockets[i].cameraStatus = ON;
     }
 }
 
-void initCameraSockets(struct DataBlock *ShmDataBlock, int numberOfCameras)
+void initCameraSockets(struct DataBlock *ShmDataBlock)
 {
 
-    sem_init(&ShmDataBlock->commandStatus, 2, 0);
-    for (size_t i = 0; i < numberOfCameras; i++)
+    sem_init(&ShmDataBlock->commandIndicator, 2, 0);
+    for (size_t i = 0; i < SOCKET_NUMBER; i++)
     {
-        initSeparateCameraSocket(&ShmDataBlock->cameras[i]);
+        initSeparateCameraSocket(&ShmDataBlock->cameraSockets[i]);
     }
 }
