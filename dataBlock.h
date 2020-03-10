@@ -3,49 +3,53 @@
 
 #include <semaphore.h>
 
+//camera statuses
+#define ON 2
+#define OFF 3
+#define BUSY 5
+//****
+
 struct CameraSocket
 {
     int cameraId;
-    int serviced;              // to indicate that camera is taken by some process and already serviced
-    int on;                    //0-1 0 means off, 1 means on
-    sem_t onOffLock;           //lock for on off variable 0-1
+    int cameraStatus;
+    sem_t cStatusLock;         //lock for status
     sem_t gracefullFinishLock; //to indicate that process is done. Initial value is 0;
-    sem_t servicedLock;        //
 };
 
 struct Frame
 {
     int frameId;
-    int frameData[10]; // in the end it should be 1200*800 one dimensional array
-    //also need checksum
-    //isFinished? Do we need such variable??
+    int frameData[10]; //this is going to be 1200*800 array
+    //checksum
+    //isFinished? Do we need such variable?? to handle error cases?
 };
 
 struct CamData
 {
-    int camID;
-    struct Frame frames[10];
+    int camID;               //id of the camera currently it is random
+    struct Frame frames[10]; // frames of particular camera, in the end it will be 60
 };
 
 struct DataBlock
 {
-    //create so that if process is created then there exists camera with on state and not serviced.
-    //by other processes
-    //The cameras itself
-    struct CameraSocket cameras[10]; //the idea is that every process will iterate through this
-    //array and look for on camera
-    int numberOfActiveCameras; //should resemble number active processes // guess this also should have lock
-    sem_t commandStatus;       //initial is 0 post is done on manager process.
-    int commandType;
+    struct CameraSocket cameraSockets[10]; // the cameras will connect to these sockets
+    int numberOfActiveCameras;             // should resemble number active processes
+                                           // guess this should also have lock
+    sem_t commandIndicator;                // initial value is 0. it's purpose is
+                                           // to indicate about new command
+    int commandType;                       // indicated commandType
+
     //The camData part
     sem_t produced; // 0-10
     sem_t consumed; // 0-10
 
-    sem_t cIndexLock;           // 0-1
-    int consumedUpTo;           // index of consumed up to (cumulative)
+    sem_t cIndexLock;           // 0-1 to access consumedUpTo
+    int consumedUpTo;           // index of consumedUpTo (cumulative)
     sem_t pIndexLock;           // 0-1 to access producedUpTo
-    int producedUpTo;           // index of produced up to (cumulative)
-    struct CamData camdata[10]; //should be 60 frames of particular camera
+    int producedUpTo;           // index of producedUpTo (cumulative)
+    struct CamData camdata[10]; // the data read from cameras will end up in this array
+                                // each camdata have 60 frames of particular camera
 };
 
 #endif
