@@ -124,8 +124,6 @@ int main(int argc, char *argv[])
             // sleep(2);
         }
         //shutdown service
-        //I think we need a lock here because we off the sockets one by one
-        ShmDataBlock->numberOfActiveCameras = ShmDataBlock->numberOfActiveCameras - 1;
         printf("The process is shut down\n");
         fflush(stdout);
         sem_post(&chosenCamera->gracefullFinishLock);
