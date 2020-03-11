@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
                     sem_wait(&camera->cStatusLock);
                     if (camera->cameraStatus == OFF)
                     {
-                        camera->cameraStatus = BUSY;
+                        camera->cameraStatus = ON;
                         ShmDataBlock->commandType = ADD;
                         sem_post(&ShmDataBlock->commandIndicator); //this indicator should not be 2
                         sem_post(&camera->cStatusLock);
@@ -125,30 +125,11 @@ int main(int argc, char *argv[])
 
                 sem_wait(&camera->gracefullFinishLock);
                 printf("The camera with ID: %i was removed\n", camera->cameraId);
-                //first we want to find the camera that is on and off it if it serviced wait for gracefull
-                //shutdown
-                //first we wait for the on off lock
-                //then set on to 0 meaning that it is offed
-                //after that we wait for gracefull shutdown
-                //the remove completed
-                //do we need to decrease the number of active cameras??
-                //or process should be responsible to this?? I guess process
-                // sem_wait(&ShmDataBlock->cameras[0].onOffLock);
-                // ShmDataBlock->cameras[0].on = 0; //this means that we've offed the camera
-                // //consider this as a signal
-                // ShmDataBlock->commandType = REMOVE;
-                // sem_post(&ShmDataBlock->commandStatus);
-
-                // sem_post(&ShmDataBlock->cameras[0].onOffLock);
-                // //do we need gracefullshutdown? Yes we can not add unless we are sure that it is shutdown
-                // sem_wait(&ShmDataBlock->cameras[0].gracefullFinishLock);
-                // printf("The camera with ID: %i was removed\n", ShmDataBlock->cameras[0].cameraId);
-                // //here it is off and can be replaced with other process.
-                //how we can check it?
             }
             else if (commandType == STOP)
             {
                 printf("You've entered stop\n");
+                //wait for child to finish and then exit.
             }
             else
             {

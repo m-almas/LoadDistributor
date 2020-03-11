@@ -58,9 +58,14 @@ int main(int argc, char *argv[])
             {
                 pid = fork();
             }
-            else
+            else if (&ShmDataBlock->commandType == STOP)
             {
-                break; //in this case we will wait out all childs to finish and exit
+                //should be called only if there is 0 active processes
+                //lock for active processes
+                //if number of processess is 0 then go on and exit
+                //else print you still have processe
+                //in this case we will wait out all childs to finish and exit
+                exit(0);
             }
             if (pid == 0)
             {
@@ -123,7 +128,7 @@ int main(int argc, char *argv[])
             // sleep(2);
         }
         //shutdown service
-        //I think we need a lock here
+        //I think we need a lock here because we off the sockets one by one
         ShmDataBlock->numberOfActiveCameras = ShmDataBlock->numberOfActiveCameras - 1;
         printf("The process is shut down\n");
         fflush(stdout);
