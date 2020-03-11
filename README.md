@@ -32,5 +32,18 @@ Let's stop on each variable:
 3) cooperate with control block of cameraHandler to (ADD, REMOVE, STOP)
 4) cooperation happens with commandIndicator lock 
 
-### how add works? 
+### How add works? 
+1) we find camera whose status is OFF (here I should mention that, we find it just by iteration, however it is easy to configure so that we can choose which camera to add and remove)
+2) after that we change its status into ON
+3) specify the command type
+4) and add 1 to the semaphore value -> (it acts like a signal for the control block of cameraHandler)
+
+### How remove works? 
+1) we find camera whose status is BUSY (here I should mention that, we find it just by iteration, however it is easy to configure so that we can choose which camera to add and remove)
+2) after that we change its status into OFF
+3) specify the command type
+4) and add 1 to the semaphore value -> (it acts like a signal for the control block of cameraHandler)
+5) then wait for the gracefullShutdown -> only then we can proceed further
+
+# cameraHandler.c 
 
