@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     ShmKEY = ftok(".", 23);
     ShmDataBlock = (struct DataBlock *)getSharedMem(ShmKEY);
 
-    for (size_t j = 0; j < 1; j++)
+    for (size_t j = 0; j < 2; j++)
     {
         pid = fork();
         if (pid == 0)
@@ -54,7 +54,8 @@ int main(int argc, char *argv[])
 
             //here we get the data and do our stuff
             usleep(200000);
-            consumeCamData(&(ShmDataBlock->camdata[consumedIndex]));
+            printf("consumed\n");
+            // consumeCamData(&(ShmDataBlock->camdata[consumedIndex]));
             fflush(stdout);
 
             sem_post(&ShmDataBlock->consumed);
