@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
             }
             else if (&ShmDataBlock->commandType == STOP)
             {
-                //should be called only if there is 0 active processes
                 exit(0);
             }
             if (pid == 0)
