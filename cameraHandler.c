@@ -61,10 +61,6 @@ int main(int argc, char *argv[])
             else if (&ShmDataBlock->commandType == STOP)
             {
                 //should be called only if there is 0 active processes
-                //lock for active processes
-                //if number of processess is 0 then go on and exit
-                //else print you still have processe
-                //in this case we will wait out all childs to finish and exit
                 exit(0);
             }
             if (pid == 0)
@@ -116,7 +112,7 @@ int main(int argc, char *argv[])
             ShmDataBlock->producedUpTo = (producedIndex + 1) % 10;
             sem_post(&ShmDataBlock->pIndexLock);
             produceCamData(&(ShmDataBlock->camdata[producedIndex]));
-            sleep(5);
+            sleep(2);
             dprintf(fd, "produced data with index %i for camera %i \n", dataIndex, chosenCamera->cameraId);
             fflush(stdout);
 
