@@ -13,6 +13,11 @@
 
 #include "dataBlock.h"
 
+/*
+    Need to introduce here the controll block 
+    that was developed in cameraManager
+*/
+
 #define BUSY 7
 #define EMPTY 5
 #define FILLED 3
