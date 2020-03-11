@@ -108,9 +108,9 @@ int main(int argc, char *argv[])
             sem_wait(&ShmDataBlock->consumed);
             sem_wait(&ShmDataBlock->pIndexLock);
 
-            //get produced index and mode it with 10
+            //get produced index and mode it with number of camdata block
             producedIndex = ShmDataBlock->producedUpTo;
-            ShmDataBlock->producedUpTo = (producedIndex + 1) % 10;
+            ShmDataBlock->producedUpTo = (producedIndex + 1) % (MAX_CAM_NUMBER * 2);
             sem_post(&ShmDataBlock->pIndexLock);
             produceCamData(&(ShmDataBlock->camdata[producedIndex]));
             sleep(2);
