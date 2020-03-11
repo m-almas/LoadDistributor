@@ -73,9 +73,10 @@ int main(int argc, char *argv[])
     if (pid == 0)
     {
         int fd;
+        int i = 0;
         fd = open("logs.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
         struct CameraSocket *chosenCamera;
-        for (size_t i = 0; i < 10; i++)
+        for (;;)
         {
             chosenCamera = &ShmDataBlock->cameraSockets[i];
             sem_wait(&chosenCamera->cStatusLock);
@@ -84,12 +85,13 @@ int main(int argc, char *argv[])
                 break;
             }
             sem_post(&chosenCamera->cStatusLock);
+            i = (i + 1) % 10;
         }
         chosenCamera->cameraStatus = BUSY;
         sem_post(&chosenCamera->cStatusLock);
         //camera is chosen for service
         int producedIndex;
-        int dataIndex;
+        int dataIndex = 0;
         for (;;)
         {
             //to check if camera was shutdown
