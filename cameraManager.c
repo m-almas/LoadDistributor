@@ -97,6 +97,12 @@ int main(int argc, char *argv[])
             int commandType = getCommandType(input);
             if (commandType == ADD)
             {
+                if (ShmDataBlock->numberOfActiveCameras >= MAX_CAM_NUMBER)
+                {
+                    printf("can not add more cameras, its number is limited to %i\n", MAX_CAM_NUMBER);
+                    fflush(stdout);
+                }
+
                 addChild(ShmDataBlock);
             }
             else if (commandType == REMOVE)
