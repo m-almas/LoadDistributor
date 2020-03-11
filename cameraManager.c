@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
                 {
                     printf("can not add more cameras, its number is limited to %i\n", MAX_CAM_NUMBER);
                     fflush(stdout);
+                    continue;
                 }
 
                 addChild(ShmDataBlock);
@@ -213,7 +214,6 @@ void addChild(struct DataBlock *ShmDataBlock)
         }
         sem_post(&camera->cStatusLock);
     }
-
     printf("camera with id: %i was added\n", camera->cameraId);
 }
 
