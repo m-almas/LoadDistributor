@@ -43,8 +43,8 @@ struct DataBlock
     int commandType;                   // indicated commandType
 
     //The camData part
-    sem_t produced; // 0-10
-    sem_t consumed; // 0-10
+    sem_t produced; // 0-20
+    sem_t consumed; // 0-20
 
     sem_t cIndexLock; // 0-1 to access consumedUpTo
     int consumedUpTo; // index of consumedUpTo (cumulative)

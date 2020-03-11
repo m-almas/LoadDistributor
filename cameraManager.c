@@ -153,7 +153,7 @@ int getCommandType(char *buf)
 void initCamData(struct DataBlock *ShmDataBlock)
 {
 
-    sem_init(&ShmDataBlock->consumed, 2, 10);
+    sem_init(&ShmDataBlock->consumed, 2, MAX_CAM_NUMBER * 2);
     sem_init(&ShmDataBlock->produced, 2, 0);
     sem_init(&ShmDataBlock->cIndexLock, 2, 1);
     sem_init(&ShmDataBlock->pIndexLock, 2, 1);
