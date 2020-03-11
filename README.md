@@ -5,6 +5,7 @@
 * ``` ./manager ```
 * enter the number of active cameras 
 * then on separate terminal window run ``` ./gpumanager ```
+* the outputs are generated in cameralogs.txt and gpulogs.txt
 
 ## The main parts: 
 1) cameraHandler.c 
