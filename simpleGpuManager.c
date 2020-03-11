@@ -17,13 +17,17 @@ void *getSharedMem(key_t ShmKEY);
 
 int getFilledIndex(int *index, int length);
 
-void consumeCamData(struct CamData *camdata);
+void consumeCamData(struct CamData *camdata, int fd);
 
 int main(int argc, char *argv[])
 {
     key_t ShmKEY;
     int ShmID;
     pid_t pid;
+    sem_t io_lock;
+
+    sem_init(&io_lock, 2, 1);
+
     struct DataBlock *ShmDataBlock;
     /*to get unigue identifier for sharedMemory*/
     ShmKEY = ftok(".", 23);
@@ -41,6 +45,8 @@ int main(int argc, char *argv[])
     {
         int i;
         int consumedIndex;
+        int fd;
+        fd = open("gpulogs.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
         for (;;)
         {
             //something produced
@@ -54,10 +60,11 @@ int main(int argc, char *argv[])
 
             //here we get the data and do our stuff
             usleep(200000);
-            printf("consumed\n");
-            // consumeCamData(&(ShmDataBlock->camdata[consumedIndex]));
+            // printf("consumed\n");
+            sem_wait(&ShmDataBlock->cIndexLock);
+            consumeCamData(&(ShmDataBlock->camdata[consumedIndex]), fd);
             fflush(stdout);
-
+            sem_post(&ShmDataBlock->cIndexLock);
             sem_post(&ShmDataBlock->consumed);
         }
     }
@@ -94,17 +101,16 @@ void *getSharedMem(key_t ShmKEY)
     return ShmPTR;
 }
 
-void consumeCamData(struct CamData *camdata)
+void consumeCamData(struct CamData *camdata, int fd)
 {
-    printf("----------------------------\n");
-    for (size_t i = 0; i < 10; i++)
+    dprintf(fd, "----------------------------\n");
+    dprintf(fd, "The 0'th frame of camera with id %i\n", camdata->camID);
+    for (size_t j = 0; j < 5; j++)
     {
-        for (size_t j = 0; j < 5; j++)
-        {
-            printf(" %i ", camdata->frames[i].frameData[j]);
-            //here we should write it into file
-        }
-        printf("\n");
+
+        dprintf(fd, " %i ", camdata->frames[0].frameData[j]);
+        //here we should write it into file
     }
-    printf("----------------------------\n");
+    dprintf(fd, "\n");
+    dprintf(fd, "----------------------------\n");
 }
