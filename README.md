@@ -9,6 +9,7 @@
 * to add new camera enter ```add``` into manager prompt 
 * to remove enter ```remove```
 * to stop enter ```stop```
+* after stop, you should manually halt the gpumanager prompt
 
 ## The main parts: 
 1) cameraHandler.c 
