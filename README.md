@@ -26,5 +26,11 @@ Let's stop on each variable:
 * cameraStatus -> status of the socket (BUSY, ON, OFF)
 * gracefullFinishLock -> lock whose purpose is to ensure proper shutdown of the socket. We should not power off in the middle of the writing process. 
 
-# cameraHandler.c 
-*
+# cameraManager.c 
+1) allocates shared memory 
+2) get from user initial active camera value 
+3) cooperate with control block of cameraHandler to (ADD, REMOVE, STOP)
+4) cooperation happens with commandIndicator lock 
+
+### how add works? 
+
