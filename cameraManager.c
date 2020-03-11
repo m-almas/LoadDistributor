@@ -26,11 +26,12 @@
 
 //helper functions
 int getCommandType(char *buf);
-void *initSharedMemory(key_t ShmKEY);
+void *initSharedMemory(key_t ShmKEY, int ShmID);
 void initCamData(struct DataBlock *ShmDataBlock);
 void activateCameras(struct DataBlock *dataBlock, int numberOfCameras);
 void initSeparateCameraSocket(struct CameraSocket *camera);
 void initCameraSockets(struct DataBlock *ShmDataBlock);
+void removeChild(struct DataBlock *ShmDataBlock);
 
 int main(int argc, char *argv[])
 {
@@ -51,9 +52,16 @@ int main(int argc, char *argv[])
     //allocating shared memory
     key_t ShmKEY;
     struct DataBlock *ShmDataBlock;
+    int ShmID;
     //to get unigue identifier
     ShmKEY = ftok(".", 23);
-    ShmDataBlock = (struct DataBlock *)initSharedMemory(ShmKEY);
+    ShmID = shmget(ShmKEY, sizeof(struct DataBlock), IPC_CREAT | 0666);
+    if (ShmID < 0)
+    {
+        printf("*** shmget error ***\n");
+        exit(1);
+    }
+    ShmDataBlock = (struct DataBlock *)initSharedMemory(ShmKEY, ShmID);
     //****
 
     initCamData(ShmDataBlock);
@@ -94,6 +102,7 @@ int main(int argc, char *argv[])
                     if (camera->cameraStatus == OFF)
                     {
                         camera->cameraStatus = ON;
+                        ShmDataBlock->numberOfActiveCameras++;
                         ShmDataBlock->commandType = ADD;
                         sem_post(&ShmDataBlock->commandIndicator); //this indicator should not be 2
                         sem_post(&camera->cStatusLock);
@@ -102,34 +111,25 @@ int main(int argc, char *argv[])
                     sem_post(&camera->cStatusLock);
                 }
 
-                printf("You've entered add\n");
+                printf("camera with id: %i\n", camera->cameraId);
             }
             else if (commandType == REMOVE)
             {
-                struct CameraSocket *camera;
-                for (size_t i = 0; i < 10; i++)
-                {
-                    camera = &ShmDataBlock->cameraSockets[i];
-                    sem_wait(&camera->cStatusLock);
-                    if (camera->cameraStatus == BUSY)
-                    {
-                        camera->cameraStatus = OFF;
-
-                        ShmDataBlock->commandType = REMOVE;
-                        sem_post(&ShmDataBlock->commandIndicator);
-                        sem_post(&camera->cStatusLock);
-                        break;
-                    }
-                    sem_post(&camera->cStatusLock);
-                }
-
-                sem_wait(&camera->gracefullFinishLock);
-                printf("The camera with ID: %i was removed\n", camera->cameraId);
+                removeChild(ShmDataBlock);
             }
             else if (commandType == STOP)
             {
                 printf("You've entered stop\n");
-                //wait for child to finish and then exit.
+                int currentActiveCameras = ShmDataBlock->numberOfActiveCameras;
+                for (size_t i = 0; i < currentActiveCameras; i++)
+                {
+                    removeChild(ShmDataBlock);
+                }
+                kill(pid, SIGTERM);
+                printf("all childs were stopped\n");
+                shmdt(ShmDataBlock);
+                shmctl(ShmID, IPC_RMID, 0);
+                exit(0);
             }
             else
             {
@@ -160,17 +160,9 @@ int getCommandType(char *buf)
     return -1;
 }
 
-void *initSharedMemory(key_t ShmKEY)
+void *initSharedMemory(key_t ShmKEY, int ShmID)
 {
-    int ShmID;
     struct DataBlock *ShmPTR;
-
-    ShmID = shmget(ShmKEY, sizeof(struct DataBlock), IPC_CREAT | 0666);
-    if (ShmID < 0)
-    {
-        printf("*** shmget error ***\n");
-        exit(1);
-    }
     /*attaching to the memory with pointer*/
     ShmPTR = (struct DataBlock *)shmat(ShmID, NULL, 0);
     if ((int)ShmPTR == -1)
@@ -217,4 +209,27 @@ void initCameraSockets(struct DataBlock *ShmDataBlock)
     {
         initSeparateCameraSocket(&ShmDataBlock->cameraSockets[i]);
     }
+}
+
+void removeChild(struct DataBlock *ShmDataBlock)
+{
+    struct CameraSocket *camera;
+    for (size_t i = 0; i < 10; i++)
+    {
+        camera = &ShmDataBlock->cameraSockets[i];
+        sem_wait(&camera->cStatusLock);
+        if (camera->cameraStatus == BUSY)
+        {
+            camera->cameraStatus = OFF;
+
+            ShmDataBlock->commandType = REMOVE;
+            sem_post(&ShmDataBlock->commandIndicator);
+            sem_post(&camera->cStatusLock);
+            break;
+        }
+        sem_post(&camera->cStatusLock);
+    }
+
+    sem_wait(&camera->gracefullFinishLock);
+    printf("The camera with ID: %i was removed\n", camera->cameraId);
 }
