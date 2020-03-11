@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
             sem_post(&ShmDataBlock->cIndexLock);
 
             //here we get the data and do our stuff
-            sleep(1);
+            usleep(200000);
             consumeCamData(&(ShmDataBlock->camdata[consumedIndex]));
             fflush(stdout);
 
