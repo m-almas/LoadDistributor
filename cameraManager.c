@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
                     sem_wait(&camera->cStatusLock);
                     if (camera->cameraStatus == BUSY)
                     {
-                        camera->cameraStatus == OFF;
+                        camera->cameraStatus = OFF;
 
                         ShmDataBlock->commandType = REMOVE;
                         sem_post(&ShmDataBlock->commandIndicator);
@@ -161,8 +161,6 @@ int main(int argc, char *argv[])
         execl("cameraHandler", "cameraHandler", NULL);
     }
 }
-
-
 
 int getCommandType(char *buf)
 {
