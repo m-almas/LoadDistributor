@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
     }
 }
 
+//******************************************************
 int getCommandType(char *buf)
 {
     if (strncmp(buf, "add", 3) == 0)
