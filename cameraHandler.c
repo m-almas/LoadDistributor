@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     {
         int fd;
         int i = 0;
-        fd = open("logs.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
+        fd = open("cameralogs.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
         struct CameraSocket *chosenCamera;
         for (;;)
         {
@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
         sem_post(&chosenCamera->cStatusLock);
         //camera is chosen for service
         int producedIndex;
-        int dataIndex = 0;
         for (;;)
         {
             //to check if camera was shutdown
@@ -112,13 +111,13 @@ int main(int argc, char *argv[])
             producedIndex = ShmDataBlock->producedUpTo;
             ShmDataBlock->producedUpTo = (producedIndex + 1) % (MAX_CAM_NUMBER * 2);
             sem_post(&ShmDataBlock->pIndexLock);
+            ShmDataBlock->camdata[producedIndex].camID = chosenCamera->cameraId;
             produceCamData(&(ShmDataBlock->camdata[producedIndex]));
             sleep(2);
-            dprintf(fd, "produced data with index %i for camera %i \n", dataIndex, chosenCamera->cameraId);
+            dprintf(fd, "produced frames for camera %i \n", chosenCamera->cameraId);
             fflush(stdout);
 
             sem_post(&ShmDataBlock->produced);
-            dataIndex++;
 
             // dprintf(fd, "service is on for %i\n", chosenCamera->cameraId);
             // fflush(stdout);
