@@ -1,5 +1,11 @@
 # Load distribution with shared memory 
 
+## Usage 
+* ``` make all ```
+* ``` ./manager ```
+* enter the number of active cameras 
+* then on separate terminal window run ``` ./gpumanager ```
+
 ## The main parts: 
 1) cameraHandler.c 
 2) cameraManager.c 
