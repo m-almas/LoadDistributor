@@ -46,4 +46,14 @@ Let's stop on each variable:
 5) then wait for the gracefullShutdown -> only then we can proceed further
 
 # cameraHandler.c 
+It has three parts: 
+1) init block -> to activate cameras initially (number of active cameras that we get from user)
+2) control block -> with the help of command indicator the block will cooperate with manager 
+3) do something block -> where active camera writes data into allocated blocks
+
+# SimpleGpuManager.c 
+1) two GPU encoders 
+2) I've assumed that it will presumably spend 0.2 seconds for 60 frames -> considering 300fps 
+3) It will cooperate with cameraHandlers with just one lock (produced) 
+4) cIndex lock is required to cooperate within those 2 processes
 
