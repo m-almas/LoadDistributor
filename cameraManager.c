@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        //initblock
+        //***
         //controllblock
         if (pid > 0)
         {
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        //controllblock
+        //***
 
         //do somethingblock
         if (pid == 0)
