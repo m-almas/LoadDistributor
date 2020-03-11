@@ -6,6 +6,9 @@
 * enter the number of active cameras 
 * then on separate terminal window run ``` ./gpumanager ```
 * the outputs are generated in cameralogs.txt and gpulogs.txt
+* to add new camera enter ```add``` into manager prompt 
+* to remove enter ```remove```
+* to stop enter ```stop```
 
 ## The main parts: 
 1) cameraHandler.c 
