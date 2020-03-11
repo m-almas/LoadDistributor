@@ -158,86 +158,11 @@ int main(int argc, char *argv[])
     }
     else
     {
-        int status;
-        //initblock
-        for (size_t i = 0; i < ShmDataBlock->numberOfActiveCameras; i++)
-        {
-            pid = fork();
-
-            if (pid == 0)
-            {
-                break;
-            }
-        }
-
-        //***
-        //controllblock
-        if (pid > 0)
-        {
-            for (;;)
-            {
-                sem_wait(&ShmDataBlock->commandIndicator);
-                if (ShmDataBlock->commandType == REMOVE)
-                {
-                    wait(&status);
-                }
-                else if (ShmDataBlock->commandType == ADD)
-                {
-                    pid = fork();
-                }
-                else
-                {
-                    break; //in this case we will wait out all childs to finish and exit
-                }
-                if (pid == 0)
-                {
-                    break;
-                }
-            }
-        }
-        //***
-
-        //do somethingblock
-        if (pid == 0)
-        {
-            int fd;
-            fd = open("logs.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
-            struct CameraSocket *chosenCamera;
-            for (size_t i = 0; i < 10; i++)
-            {
-                chosenCamera = &ShmDataBlock->cameraSockets[i];
-                sem_wait(&chosenCamera->cStatusLock);
-                if (chosenCamera->cameraStatus == ON) //problem is here??
-                {
-                    break;
-                }
-                sem_post(&chosenCamera->cStatusLock);
-            }
-            chosenCamera->cameraStatus = BUSY;
-            sem_post(&chosenCamera->cStatusLock);
-            //camera is chosen for service
-            for (;;)
-            {
-                sem_wait(&chosenCamera->cStatusLock);
-                if (chosenCamera->cameraStatus == OFF)
-                {
-                    sem_post(&chosenCamera->cStatusLock);
-                    break;
-                }
-                sem_post(&chosenCamera->cStatusLock);
-                dprintf(fd, "service is on for %i\n", chosenCamera->cameraId);
-                fflush(stdout);
-                sleep(2);
-            }
-            //I think we need a lock here
-            ShmDataBlock->numberOfActiveCameras = ShmDataBlock->numberOfActiveCameras - 1;
-            printf("The process is shut down\n");
-            fflush(stdout);
-            sem_post(&chosenCamera->gracefullFinishLock);
-            exit(1);
-        }
+        execl("cameraHandler", "cameraHandler", NULL);
     }
 }
+
+
 
 int getCommandType(char *buf)
 {
